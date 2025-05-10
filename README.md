@@ -1,7 +1,6 @@
 # 🎮 趣味五子棋游戏 (Funny Gomoku Game)
 
 <div align="center">
-    <img src="https://i.imgur.com/GzEWk5s.png" alt="游戏截图" width="600px">
     <p>一个精美的、带有动感效果的五子棋游戏 🌟</p>
 </div>
 
@@ -44,8 +43,7 @@ cd funny-gomoku-game
 游戏界面截图：
 
 <div align="center">
-    <img src="https://i.imgur.com/U9cZehp.png" alt="游戏截图2" width="300px">
-    <img src="https://i.imgur.com/FhYfzjA.png" alt="游戏截图3" width="300px">
+    <img src="./screenshot/1.png" alt="游戏截图2" width="600px">
 </div>
 
 ## 📝 特别鸣谢
