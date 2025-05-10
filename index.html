@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋游戏</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #game-container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            margin-top: 20px;
+        }
+        #mode-selection, #color-selection {
+            margin: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            animation: glow 2s infinite alternate;
+        }
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            }
+        }
+        #board {
+            background-color: #deb887;
+            border: 2px solid #000;
+            border-radius: 5px;
+            box-shadow: 0 0 25px rgba(222, 184, 135, 0.5);
+            transition: all 0.3s ease;
+        }
+        #board:hover {
+            box-shadow: 0 0 30px rgba(222, 184, 135, 0.8);
+        }
+        canvas {
+            cursor: none;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        .winner-text {
+            animation: winnerAnim 0.5s infinite alternate;
+            font-weight: bold;
+            color: gold;
+        }
+        @keyframes winnerAnim {
+            from {
+                transform: scale(1);
+                text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+            to {
+                transform: scale(1.1);
+                text-shadow: 0 0 20px rgba(255, 215, 0, 1);
+            }
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #444;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:active {
+            transform: translateY(-1px);
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+        }
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="particles-js"></div>
+<div id="game-container">
+    <div id="mode-selection">
+        <h2>选择游戏模式</h2>
+        <button onclick="startGame('single')">单人模式</button>
+        <button onclick="startGame('double')">双人模式</button>
+    </div>
+    <div id="color-selection" style="display: none;">
+        <h2>选择棋子颜色</h2>
+        <button onclick="selectColor('black')">黑子</button>
+        <button onclick="selectColor('white')">白子</button>
+    </div>
+    <canvas id="board" width="450" height="450"></canvas>
+    <div id="status">游戏未开始</div>
+</div>
+
+<!-- 粒子动画库 -->
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+<script>
+    // 配置粒子动画
+    particlesJS("particles-js", {
+        "particles": {
+            "number": {
+                "value": 80,
+                "density": {
+                    "enable": true,
+                    "value_area": 800
+                }
+            },
+            "color": {
+                "value": "#deb887"
+            },
+            "shape": {
+                "type": "circle"
+            },
+            "opacity": {
+                "value": 0.5,
+                "random": true
+            },
+            "size": {
+                "value": 3,
+                "random": true
+            },
+            "line_linked": {
+                "enable": true,
+                "distance": 150,
+                "color": "#deb887",
+                "opacity": 0.4,
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 2,
+                "direction": "none",
+                "random": true,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": {
+                    "enable": true,
+                    "mode": "grab"
+                },
+                "onclick": {
+                    "enable": true,
+                    "mode": "push"
+                },
+                "resize": true
+            },
+            "modes": {
+                "grab": {
+                    "distance": 140,
+                    "line_linked": {
+                        "opacity": 1
+                    }
+                },
+                "push": {
+                    "particles_nb": 4
+                }
+            }
+        },
+        "retina_detect": true
+    });
+
+    // 添加音效
+    const placeSound = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+    const winSound = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+    
+    // 设置音效
+    placeSound.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
+    winSound.src = "https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3";
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const size = 15; // 15x15棋盘
+    const cellSize = canvas.width / (size - 1); // 修改为线之间的距离
+    let board = [];
+    let currentPlayer = 'black';
+    let gameMode = null;
+    let playerColor = null;
+    let gameStarted = false;
+    let mouseX = -1, mouseY = -1;
+    let animations = []; // 存储所有正在运行的动画
+    let winningCells = []; // 存储获胜的5个棋子位置
+
+    // 添加涟漪效果
+    function createRipple(x, y) {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        document.body.appendChild(ripple);
+        
+        // 动画结束后移除元素
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+
+    function initBoard() {
+        board = Array(size).fill().map(() => Array(size).fill(null));
+        winningCells = [];
+        animations = [];
+        drawBoard();
+    }
+
+    function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制棋盘背景
+        ctx.fillStyle = '#deb887';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制木纹效果
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        for(let i = 0; i < canvas.width; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.strokeStyle = '#7d5a3c';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 绘制棋盘线条
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < size; i++) {
+            // 横线
+            ctx.beginPath();
+            ctx.moveTo(0, i * cellSize);
+            ctx.lineTo(canvas.width, i * cellSize);
+            ctx.stroke();
+            
+            // 竖线
+            ctx.beginPath();
+            ctx.moveTo(i * cellSize, 0);
+            ctx.lineTo(i * cellSize, canvas.height);
+            ctx.stroke();
+        }
+
+        // 绘制棋盘中心点和天元点
+        const centerPoints = [
+            {x: 3 * cellSize, y: 3 * cellSize},
+            {x: 11 * cellSize, y: 3 * cellSize},
+            {x: 7 * cellSize, y: 7 * cellSize}, // 天元
+            {x: 3 * cellSize, y: 11 * cellSize},
+            {x: 11 * cellSize, y: 11 * cellSize}
+        ];
+        
+        centerPoints.forEach(point => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#000";
+            ctx.fill();
+        });
+
+        // 绘制已放置的棋子
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (board[i][j]) {
+                    const isWinningCell = winningCells.some(cell => cell.row === i && cell.col === j);
+                    drawPiece(j * cellSize, i * cellSize, board[i][j], isWinningCell);
+                }
+            }
+        }
+
+        // 绘制鼠标悬停时的虚拟棋子
+        if (gameStarted && mouseX >= 0 && mouseY >= 0) {
+            const { row, col } = getNearestIntersection(mouseX, mouseY);
+            if (row >= 0 && row < size && col >= 0 && col < size && !board[row][col]) {
+                ctx.beginPath();
+                ctx.arc(col * cellSize, row * cellSize, cellSize / 2 - 2, 0, Math.PI * 2);
+                ctx.fillStyle = gameMode === 'double' ? currentPlayer : playerColor;
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                
+                // 添加光环效果
+                ctx.beginPath();
+                ctx.arc(col * cellSize, row * cellSize, cellSize / 2 + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = gameMode === 'double' ? 
+                    (currentPlayer === 'black' ? '#333' : '#ccc') : 
+                    (playerColor === 'black' ? '#333' : '#ccc');
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // 处理动画
+        processAnimations();
+    }
+
+    // 绘制棋子
+    function drawPiece(x, y, color, isWinning = false) {
+        const radius = cellSize / 2 - 2;
+        
+        ctx.save();
+        
+        // 棋子阴影
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        
+        // 棋子基本形状
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        
+        // 创建径向渐变让棋子看起来更立体
+        const gradient = ctx.createRadialGradient(
+            x - radius/3, y - radius/3, radius/10,
+            x, y, radius
+        );
+        
+        if (color === 'black') {
+            gradient.addColorStop(0, '#666');
+            gradient.addColorStop(1, '#000');
+        } else {
+            gradient.addColorStop(0, '#fff');
+            gradient.addColorStop(1, '#ddd');
+        }
+        
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // 边框
+        ctx.strokeStyle = color === 'black' ? '#000' : '#aaa';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // 高光效果
+        ctx.beginPath();
+        ctx.arc(x - radius/3, y - radius/3, radius/3, 0, Math.PI * 2);
+        ctx.fillStyle = color === 'black' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+        
+        // 如果是获胜的棋子，添加动画效果
+        if (isWinning) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius + 4 + Math.sin(Date.now() / 200) * 3, 0, Math.PI * 2);
+            ctx.strokeStyle = color === 'black' ? 'gold' : 'orange';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        ctx.restore();
+    }
+
+    // 获取最近的交叉点
+    function getNearestIntersection(x, y) {
+        const col = Math.round(x / cellSize);
+        const row = Math.round(y / cellSize);
+        return { row, col };
+    }
+
+    // 添加下棋动画
+    function addPlaceAnimation(row, col, color) {
+        const x = col * cellSize;
+        const y = row * cellSize;
+        
+        // 播放音效
+        placeSound.currentTime = 0;
+        placeSound.play();
+        
+        // 添加涟漪视觉效果
+        const rect = canvas.getBoundingClientRect();
+        createRipple(rect.left + x, rect.top + y);
+        
+        // 添加棋子掉落动画
+        animations.push({
+            type: 'drop',
+            startTime: Date.now(),
+            duration: 300,
+            x: x,
+            y: y,
+            startY: y - 50, // 起始位置在上方
+            color: color,
+            row: row,
+            col: col
+        });
+    }
+
+    // 处理所有动画
+    function processAnimations() {
+        const now = Date.now();
+        const remainingAnimations = [];
+        
+        for (const anim of animations) {
+            const elapsed = now - anim.startTime;
+            const progress = Math.min(elapsed / anim.duration, 1);
+            
+            if (anim.type === 'drop') {
+                // 棋子掉落动画
+                if (progress < 1) {
+                    const currentY = anim.startY + (anim.y - anim.startY) * easeOutBounce(progress);
+                    
+                    ctx.beginPath();
+                    ctx.arc(anim.x, currentY, cellSize / 2 - 2, 0, Math.PI * 2);
+                    
+                    const gradient = ctx.createRadialGradient(
+                        anim.x - (cellSize/2 - 2)/3, 
+                        currentY - (cellSize/2 - 2)/3, 
+                        (cellSize/2 - 2)/10,
+                        anim.x, currentY, cellSize/2 - 2
+                    );
+                    
+                    if (anim.color === 'black') {
+                        gradient.addColorStop(0, '#666');
+                        gradient.addColorStop(1, '#000');
+                    } else {
+                        gradient.addColorStop(0, '#fff');
+                        gradient.addColorStop(1, '#ddd');
+                    }
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    
+                    remainingAnimations.push(anim);
+                }
+            }
+        }
+        
+        animations = remainingAnimations;
+    }
+
+    // 缓动函数 - 弹跳效果
+    function easeOutBounce(x) {
+        const n1 = 7.5625;
+        const d1 = 2.75;
+        
+        if (x < 1 / d1) {
+            return n1 * x * x;
+        } else if (x < 2 / d1) {
+            return n1 * (x -= 1.5 / d1) * x + 0.75;
+        } else if (x < 2.5 / d1) {
+            return n1 * (x -= 2.25 / d1) * x + 0.9375;
+        } else {
+            return n1 * (x -= 2.625 / d1) * x + 0.984375;
+        }
+    }
+
+    function startGame(mode) {
+        gameMode = mode;
+        document.getElementById('mode-selection').style.display = 'none';
+        if (mode === 'single') {
+            document.getElementById('color-selection').style.display = 'block';
+        } else {
+            gameStarted = true;
+            initBoard();
+            updateStatus();
+        }
+    }
+
+    function selectColor(color) {
+        playerColor = color;
+        document.getElementById('color-selection').style.display = 'none';
+        gameStarted = true;
+        initBoard();
+        currentPlayer = 'black';
+        updateStatus();
+        if (playerColor === 'white') {
+            setTimeout(aiMove, 800);
+        }
+    }
+
+    function updateStatus() {
+        const statusElem = document.getElementById('status');
+        
+        if (!gameStarted) return;
+        
+        const winner = checkWin();
+        if (winner) {
+            let message;
+            if (gameMode === 'double') {
+                message = `${winner} 获胜！`;
+            } else {
+                message = winner === playerColor ? '您获胜了！' : 'AI 获胜！';
+            }
+            statusElem.textContent = message;
+            statusElem.className = 'winner-text';
+            
+            // 播放获胜音效
+            winSound.play();
+            
+            gameStarted = false;
+            
+            // 添加获胜特效
+            addWinningEffect();
+        } else if (isBoardFull()) {
+            statusElem.textContent = '平局！';
+            gameStarted = false;
+        } else {
+            let text;
+            if (gameMode === 'double') {
+                text = `当前玩家：${currentPlayer}`;
+            } else {
+                text = currentPlayer === playerColor ? `轮到您（${playerColor}）` : 'AI 思考中...';
+            }
+            statusElem.textContent = text;
+            statusElem.className = '';
+        }
+    }
+
+    // 添加获胜特效
+    function addWinningEffect() {
+        // 粒子爆炸效果
+        for (const cell of winningCells) {
+            const x = cell.col * cellSize;
+            const y = cell.row * cellSize;
+            
+            // 创建爆炸效果
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * 50 + 20;
+                const duration = Math.random() * 1000 + 500;
+                
+                animations.push({
+                    type: 'particle',
+                    startTime: Date.now(),
+                    duration: duration,
+                    x: x,
+                    y: y,
+                    targetX: x + Math.cos(angle) * distance,
+                    targetY: y + Math.sin(angle) * distance,
+                    color: cell.color === 'black' ? '#000' : '#fff',
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+    }
+
+    function isBoardFull() {
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (!board[i][j]) return false;
+            }
+        }
+        return true;
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+        drawBoard();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        mouseX = -1;
+        mouseY = -1;
+        drawBoard();
+    });
+
+    canvas.addEventListener('click', (e) => {
+        if (!gameStarted) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const { row, col } = getNearestIntersection(x, y);
+
+        if (row >= 0 && row < size && col >= 0 && col < size && !board[row][col]) {
+            if (gameMode === 'double' || (gameMode === 'single' && currentPlayer === playerColor)) {
+                board[row][col] = currentPlayer;
+                addPlaceAnimation(row, col, currentPlayer);
+                drawBoard();
+                
+                const winner = checkWin();
+                if (winner) {
+                    updateStatus();
+                    return;
+                }
+                if (isBoardFull()) {
+                    updateStatus();
+                    return;
+                }
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                if (gameMode === 'single' && currentPlayer !== playerColor) {
+                    setTimeout(aiMove, 800);
+                }
+            }
+        }
+    });
+
+    function checkWin() {
+        const directions = [
+            [0, 1], [1, 0], [1, 1], [1, -1]
+        ];
+        
+        winningCells = []; // 重置获胜单元格
+        
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (board[i][j]) {
+                    const color = board[i][j];
+                    for (const [di, dj] of directions) {
+                        let count = 1;
+                        let cells = [{row: i, col: j, color: color}];
+                        
+                        for (let k = 1; k < 5; k++) {
+                            const ni = i + di * k;
+                            const nj = j + dj * k;
+                            if (ni >= 0 && ni < size && nj >= 0 && nj < size && board[ni][nj] === color) {
+                                count++;
+                                cells.push({row: ni, col: nj, color: color});
+                            } else {
+                                break;
+                            }
+                        }
+                        if (count >= 5) {
+                            winningCells = cells;
+                            return color;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function aiMove() {
+        const aiColor = playerColor === 'black' ? 'white' : 'black';
+        const playerColorLocal = playerColor;
+        
+        // AI尝试赢棋
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (!board[i][j]) {
+                    board[i][j] = aiColor;
+                    if (checkWin() === aiColor) {
+                        addPlaceAnimation(i, j, aiColor);
+                        drawBoard();
+                        updateStatus();
+                        return;
+                    }
+                    board[i][j] = null;
+                }
+            }
+        }
+        
+        // AI阻止玩家赢棋
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (!board[i][j]) {
+                    board[i][j] = playerColorLocal;
+                    if (checkWin() === playerColorLocal) {
+                        board[i][j] = aiColor;
+                        addPlaceAnimation(i, j, aiColor);
+                        drawBoard();
+                        currentPlayer = playerColorLocal;
+                        updateStatus();
+                        return;
+                    }
+                    board[i][j] = null;
+                }
+            }
+        }
+        
+        // 随机走棋，但优先考虑中心区域
+        const centerX = Math.floor(size / 2);
+        const centerY = Math.floor(size / 2);
+        
+        let candidates = [];
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (!board[i][j]) {
+                    // 计算距离中心的距离
+                    const distance = Math.sqrt(
+                        Math.pow(i - centerX, 2) + Math.pow(j - centerY, 2)
+                    );
+                    candidates.push({row: i, col: j, distance: distance});
+                }
+            }
+        }
+        
+        // 按照距离中心的距离排序
+        candidates.sort((a, b) => a.distance - b.distance);
+        
+        // 取前20%的候选位置，随机选择一个
+        const topCandidates = candidates.slice(0, Math.max(1, Math.floor(candidates.length * 0.2)));
+        const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+        
+        if (selected) {
+            board[selected.row][selected.col] = aiColor;
+            addPlaceAnimation(selected.row, selected.col, aiColor);
+            drawBoard();
+            currentPlayer = playerColorLocal;
+            updateStatus();
+        }
+    }
+
+    // 动画循环
+    function animationLoop() {
+        if (gameStarted || animations.length > 0) {
+            drawBoard();
+        }
+        requestAnimationFrame(animationLoop);
+    }
+
+    initBoard();
+    animationLoop();
+</script>
+</body>
+</html>
