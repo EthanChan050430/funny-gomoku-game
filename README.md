@@ -46,11 +46,8 @@ cd funny-gomoku-game
     <img src="./screenshot/1.png" alt="游戏截图2" width="600px">
 </div>
 
-## 📝 特别鸣谢
-
-- [particles.js](https://github.com/VincentGarreau/particles.js/) - 提供精美的粒子背景效果
-- [Mixkit](https://mixkit.co/free-sound-effects/) - 提供游戏音效
-
 ## 📄 许可证
 
 [MIT License](LICENSE) © Ethan Chan
+
+![momo]([https://i0.hdslb.com/bfs/article/5bdb2dfe9178616ae975ba127623c7a3354558777.gif@1036w_1036h.avif](https://i0.hdslb.com/bfs/article/5bdb2dfe9178616ae975ba127623c7a3354558777.gif))
