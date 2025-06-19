@@ -50,4 +50,4 @@ cd funny-gomoku-game
 
 [MIT License](LICENSE) © Ethan Chan
 
-![momo]([https://i0.hdslb.com/bfs/article/5bdb2dfe9178616ae975ba127623c7a3354558777.gif@1036w_1036h.avif](https://i0.hdslb.com/bfs/article/5bdb2dfe9178616ae975ba127623c7a3354558777.gif))
+![momo](https://i0.hdslb.com/bfs/article/5bdb2dfe9178616ae975ba127623c7a3354558777.gif)
